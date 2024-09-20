@@ -41,16 +41,6 @@ def test_absolute_from_import_is_rewritten_to_relative_import_according_to_depth
     assert "from ...a import b" == result
 
 
-def test_absolute_from_import_is_rewritten_to_relative_import_according_to_depth():
-    result = rewrite_imports_in_module(
-        "from a import b",
-        top_level_names=["a"],
-        depth=2,
-    )
-
-    assert "from ...a import b" == result
-
-
 def test_relative_from_import_is_ignored():
     result = rewrite_imports_in_module(
         "from . import b",
