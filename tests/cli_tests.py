@@ -6,6 +6,9 @@ from spur import LocalShell
 
 _local = LocalShell()
 
+def example_path(example_name):
+    return os.path.join(os.path.dirname(__file__), "../examples", example_name)
+
 def normalize_line_separator(s):
     return s.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
 
@@ -46,14 +49,9 @@ def test_can_vendorize_with_pyproject_toml():
 
 @contextlib.contextmanager
 def _vendorize_example(example_name):
-    path = os.path.join(os.path.dirname(__file__), "../examples", example_name)
+    path = example_path(example_name)
     _clean_project(path)
-
-    _local.run(
-        ["python-vendorize"],
-        cwd=path,
-        encoding="utf-8",
-    )
+    _local.run(["python-vendorize"], cwd=path, encoding="utf-8")
     yield path
 
 
@@ -61,3 +59,22 @@ def _clean_project(path):
     vendor_path = os.path.join(path, "_vendor")
     if os.path.exists(vendor_path):
         shutil.rmtree(vendor_path)
+
+
+def test_upgrade():
+    example_name = "isolated-module"
+    path = os.path.join(example_path(example_name), "_vendor/")
+    if not os.path.exists(path):
+        os.makedirs(path)
+    with open(os.path.join(path, "six.py"), "w+") as f:
+        f.write("print('Not six')")
+
+    _local.run(
+        ["python-vendorize", "--upgrade"],
+        cwd=example_path(example_name),
+        encoding="utf-8"
+    )
+    with open(os.path.join(path, "six.py"), "r+") as f:
+        assert 'Not six' not in f.read()
+
+    _clean_project(path)
