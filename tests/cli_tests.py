@@ -1,48 +1,48 @@
-import sys
 import os
 import shutil
 import contextlib
-import io
 
 from spur import LocalShell
-import tempman
 
 _local = LocalShell()
+
+def normalize_line_separator(s):
+    return s.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
 
 def test_vendorizing_single_module_with_no_dependencies_grabs_one_module_file():
     with _vendorize_example("isolated-module") as project_path:
         result = _local.run(["python", os.path.join(project_path, "main.py")])
-        assert b"('one', 1)" == result.output.strip()
+        assert b"('one', 1)" == normalize_line_separator(result.output.strip())
 
 def test_can_vendorize_local_modules_from_relative_paths():
     with _vendorize_example("local-module") as project_path:
         result = _local.run(["python", os.path.join(project_path, "main.py")])
-        assert b"hello\n" == result.output
+        assert b"hello\n" == normalize_line_separator(result.output)
 
 def test_absolute_paths_in_same_distribution_are_rewritten_to_be_relative():
     with _vendorize_example("absolute-import-rewrite") as project_path:
         result = _local.run(["python", os.path.join(project_path, "main.py")])
-        assert b"hello\n" == result.output
+        assert b"hello\n" == normalize_line_separator(result.output)
 
 def test_can_rewrite_indented_absolute_simple_imports():
     with _vendorize_example("indented-absolute-simple-import-rewrite") as project_path:
         result = _local.run(["python", os.path.join(project_path, "main.py")])
-        assert b"hello\n" == result.output
+        assert b"hello\n" == normalize_line_separator(result.output)
 
 def test_can_vendorize_multiple_dependencies():
     with _vendorize_example("multiple-dependencies") as project_path:
         result = _local.run(["python", os.path.join(project_path, "main.py")])
-        assert b"hello\nworld\n" == result.output
+        assert b"hello\nworld\n" == normalize_line_separator(result.output)
 
 def test_can_vendorize_multiple_dependencies_that_require_import_rewriting():
     with _vendorize_example("multiple-dependencies-with-rewrite") as project_path:
         result = _local.run(["python", os.path.join(project_path, "main.py")])
-        assert b"hello\nworld\n" == result.output
+        assert b"hello\nworld\n" == normalize_line_separator(result.output)
 
 def test_can_vendorize_with_pyproject_toml():
     with _vendorize_example("isolated-module-pyproject") as project_path:
         result = _local.run(["python", os.path.join(project_path, "main.py")])
-        assert b"('one', 1)" == result.output.strip()
+        assert b"('one', 1)" == normalize_line_separator(result.output.strip())
 
 @contextlib.contextmanager
 def _vendorize_example(example_name):
