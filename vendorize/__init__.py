@@ -11,10 +11,10 @@ from .files import mkdir_p, ensure_file_exists
 from .import_rewrite import rewrite_imports_in_module
 
 
-def vendorize_directory(path):
+def vendorize_directory(path, upgrade):
     config = _read_directory_config(path)
 
-    return vendorize_requirements(config=config, directory_path=path)
+    return vendorize_requirements(config=config, directory_path=path, upgrade=upgrade)
 
 
 def _read_directory_config(path):
@@ -32,29 +32,43 @@ def _read_directory_config(path):
         raise RuntimeError("Could not find vendorize config")
 
 
-def vendorize_requirements(config, directory_path):
+def vendorize_requirements(config, directory_path, upgrade):
     target_directory = os.path.join(directory_path, config["target"])
     ensure_file_exists(os.path.join(target_directory, "__init__.py"))
     _download_requirements(
         cwd=directory_path or None,
         requirements=config["packages"],
         target_directory=target_directory,
+        upgrade=upgrade
     )
     top_level_names = _read_top_level_names(target_directory)
     _rewrite_imports(target_directory, top_level_names)
 
 
-def vendorize_requirement(cwd, requirement, target_directory):
-    _download_requirements(cwd=cwd, requirements=[requirement], target_directory=target_directory)
+def vendorize_requirement(cwd, requirement, target_directory, upgrade):
+    _download_requirements(
+        cwd=cwd,
+        requirements=[requirement],
+        target_directory=target_directory,
+        upgrade=upgrade
+    )
     top_level_names = _read_top_level_names(target_directory)
     _rewrite_imports(target_directory, top_level_names)
 
 
-def _download_requirements(cwd, requirements, target_directory):
+def _download_requirements(cwd, requirements, target_directory, upgrade):
     mkdir_p(target_directory)
     subprocess.check_call(
-        [sys.executable, "-m", "pip", "install", "--no-dependencies", "--target", target_directory] + requirements,
-        cwd=cwd)
+        [
+            sys.executable, "-m",
+             "pip", "install",
+             "--no-dependencies",
+             *(["--upgrade"] if upgrade else []),
+             "--target", target_directory,
+             *requirements
+         ],
+        cwd=cwd
+    )
 
 def _read_top_level_names(target_directory):
     top_level_names = set()
